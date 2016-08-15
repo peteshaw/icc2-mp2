@@ -61,7 +61,7 @@ bool MP1Node::recvCallBack(void *envelope, char *data, int size ) {
             An Optional Member Table
     */
 
-    Message* message = (Message*) data;
+    membershipMessage* message = (membershipMessage*) data;
 
     switch (message->messageType) {
     case JOINREQ:
@@ -230,7 +230,7 @@ void MP1Node::nodeStart(char *servaddrstr, short servport) {
  * DESCRIPTION: Join the distributed system
  */
 int MP1Node::introduceSelfToGroup(Address *newNodeAddress) {
-    Message *msg;
+    membershipMessage *msg;
 #ifdef DEBUGLOG
     static char s[1024];
 #endif
@@ -253,8 +253,8 @@ int MP1Node::introduceSelfToGroup(Address *newNodeAddress) {
     else {
         //send a message to the coordinator
 
-        msg = new Message;
-        size_t msgsize = sizeof(Message);
+        msg = new membershipMessage;
+        size_t msgsize = sizeof(membershipMessage);
 
         // create JOINREQ message: format of data is {struct Address myaddr}
         // sending the join request FROM ME  (originator) to
@@ -390,12 +390,12 @@ void MP1Node::printAddress(Address *addr)
             *(short*)&addr->addr[4]) ;
 }
 
-void MP1Node::handleJoinRequest(Message *mRequest) {
+void MP1Node::handleJoinRequest(membershipMessage *mRequest) {
 
     //create a join reply and send it
-    Message *mReply;
-    mReply = new Message;
-    size_t msgsize = sizeof(Message);
+    membershipMessage *mReply;
+    mReply = new membershipMessage;
+    size_t msgsize = sizeof(membershipMessage);
 
 
     mReply->messageType = JOINREP;
@@ -416,7 +416,7 @@ void MP1Node::handleJoinRequest(Message *mRequest) {
     free(mRequest);
 }
 
-void MP1Node::handleJoinReply(Message *message) {
+void MP1Node::handleJoinReply(membershipMessage *message) {
 
     //got a reply so we are in the group now
     memberNode->inGroup = true;
@@ -431,7 +431,7 @@ void MP1Node::handleJoinReply(Message *message) {
 
 
 
-void MP1Node::handleMemberTable(Message *message) {
+void MP1Node::handleMemberTable(membershipMessage *message) {
 
     vector<MemberListEntry>::iterator mlItem = message->memberList.begin();
     for (; mlItem != message->memberList.end(); ++mlItem) {
@@ -480,8 +480,8 @@ void MP1Node::sendMemberTables()
 {
     int sendCount = SPREAD_RATE;
 
-    Message *message;
-    message = new Message;
+    membershipMessage *message;
+    message = new membershipMessage;
 
     message->messageType = MEMBER_TABLE;
 
@@ -494,7 +494,7 @@ void MP1Node::sendMemberTables()
     //copy the heartbeat
     message->heartbeat = memberNode->heartbeat;
 
-    size_t messageSize = sizeof(Message);
+    size_t messageSize = sizeof(membershipMessage);
 
     srand(time(0)); // use current time as seed for random generator
 

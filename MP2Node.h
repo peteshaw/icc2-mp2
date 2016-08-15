@@ -74,7 +74,7 @@ public:
 	void checkMessages();
 
 	// coordinator dispatches messages to corresponding nodes
-	void dispatchMessages(Message message);
+    void dispatchMessages(Message message);
 
 	// find the addresses of nodes that are responsible for a key
 	vector<Node> findNodes(string key);
