@@ -90,14 +90,13 @@ void Log::LOG(Address *addr, const char * str, ...) {
 	if(memcmp(buffer, "#STATSLOG#", 10)==0){
 		fprintf(fp2, "\n %s", stdstring);
 		fprintf(fp2, "[%d] ", par->getcurrtime());
+        fprintf(fp2, "%s", buffer);
+    }
 
-		fprintf(fp2, buffer);
-	}
 	else{
 		fprintf(fp, "\n %s", stdstring);
 		fprintf(fp, "[%d] ", par->getcurrtime());
-		fprintf(fp, buffer);
-
+        fprintf(fp, "%s", buffer);
 	}
 
 	if(++numwrites >= MAXWRITES){

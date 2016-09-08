@@ -18,9 +18,9 @@
 /**
  * Macros
  */
-#define TREMOVE 20
-#define TFAIL 5
-#define SPREAD_RATE 3
+#define TREMOVE 50
+#define TFAIL 20
+#define SPREAD_RATE 10
 
 /*
  * Note: You can change/add any functions in MP1Node.{h,cpp}
@@ -40,12 +40,12 @@ enum MessageTypes{
  *
  * DESCRIPTION: Header and content of a message
  */
-typedef struct membershipMessage {
+typedef struct mp1Message {
     enum MessageTypes messageType;
     Address address;
     long heartbeat;
     vector<MemberListEntry> memberList;
-} membershipMessage;
+} mp1Message;
 
 /**
  * CLASS NAME: MP1Node
@@ -84,9 +84,9 @@ public:
     void initMemberListTable(Member *memberNode, int id, short port);
 	void printAddress(Address *addr);
 	virtual ~MP1Node();
-    void handleJoinRequest(membershipMessage *message);
-    void handleJoinReply(membershipMessage *message);
-    void handleMemberTable(membershipMessage *message);
+    void handleJoinRequest(mp1Message *message);
+    void handleJoinReply(mp1Message *message);
+    void handleMemberTable(mp1Message *message);
     void logMemberStatus();
     void updateMemberList(int id, short port, long heartbeat);
     Address makeAddress(int id, short port);
