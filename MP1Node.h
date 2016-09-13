@@ -40,12 +40,12 @@ enum MessageTypes{
  *
  * DESCRIPTION: Header and content of a message
  */
-typedef struct mp1Message {
+typedef struct MembershipMessage {
     enum MessageTypes messageType;
     Address address;
     long heartbeat;
     vector<MemberListEntry> memberList;
-} mp1Message;
+} MembershipMessage ;
 
 /**
  * CLASS NAME: MP1Node
@@ -84,9 +84,9 @@ public:
     void initMemberListTable(Member *memberNode, int id, short port);
 	void printAddress(Address *addr);
 	virtual ~MP1Node();
-    void handleJoinRequest(mp1Message *message);
-    void handleJoinReply(mp1Message *message);
-    void handleMemberTable(mp1Message *message);
+    void handleJoinRequest(MembershipMessage *message);
+    void handleJoinReply(MembershipMessage *message);
+    void handleMemberTable(MembershipMessage *message);
     void logMemberStatus();
     void updateMemberList(int id, short port, long heartbeat);
     Address makeAddress(int id, short port);

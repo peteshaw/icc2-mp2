@@ -61,7 +61,7 @@ bool MP1Node::recvCallBack(void *envelope, char *data, int size ) {
             An Optional Member Table
     */
 
-    mp1Message* message = (mp1Message*) data;
+    MembershipMessage * message = (MembershipMessage *) data;
 
     switch (message->messageType) {
     case JOINREQ:
@@ -233,7 +233,7 @@ void MP1Node::nodeStart(char *servaddrstr, short servport) {
  * DESCRIPTION: Join the distributed system
  */
 int MP1Node::introduceSelfToGroup(Address *newNodeAddress) {
-    mp1Message *msg;
+    MembershipMessage  *msg;
 #ifdef DEBUGLOG
     static char s[1024];
 #endif
@@ -256,10 +256,10 @@ int MP1Node::introduceSelfToGroup(Address *newNodeAddress) {
     else {
         //send a message to the coordinator
 
-        msg = new mp1Message;
-        size_t msgsize = sizeof(mp1Message);
+        msg = new MembershipMessage ;
+        size_t msgsize = sizeof(MembershipMessage);
 
-        // create JOINREQ mp1Message: format of data is {struct Address myaddr}
+        // create JOINREQ message: format of data is {struct Address myaddr}
         // sending the join request FROM ME  (originator) to
         msg->messageType = JOINREQ;
         msg->address = memberNode->addr;
@@ -271,7 +271,7 @@ int MP1Node::introduceSelfToGroup(Address *newNodeAddress) {
         log->LOG(&memberNode->addr, s);
 #endif
 
-        // send JOINREQ mp1Message to introducer member
+        // send JOINREQ message to introducer member
         //cout << "introduceSelfToGroup:sending Join Mesage from " << memberNode->addr.getAddress() << endl;
         emulNet->ENsend(&memberNode->addr, newNodeAddress, (char *)msg, msgsize);
 
@@ -385,19 +385,19 @@ void MP1Node::initMemberListTable(Member *memberNode, int id, short port) {
 
 
 
-void MP1Node::handleJoinRequest(mp1Message *joinRequestMessage) {
+void MP1Node::handleJoinRequest(MembershipMessage  *mRequest) {
 
     //create a join reply and send it
-    mp1Message *replyMessage;
-    replyMessage = new mp1Message;
-    size_t msgsize = sizeof(mp1Message);
+    MembershipMessage  *mReply;
+    mReply = new MembershipMessage ;
+    size_t msgsize = sizeof(MembershipMessage);
 
 
-    joinRequestMessage->messageType = JOINREP;
-    joinRequestMessage->heartbeat = memberNode->heartbeat;
-    joinRequestMessage->address=joinRequestMessage->address;
+    mReply->messageType = JOINREP;
+    mReply->heartbeat = memberNode->heartbeat;
+    mReply->address=mRequest->address;
 
-    updateMemberList(getAddressId(replyMessage->address), getAddressPort(replyMessage->address), joinRequestMessage->heartbeat);
+    updateMemberList(getAddressId(mReply->address), getAddressPort(mReply->address), mReply->heartbeat);
 
     logMemberStatus();
 
@@ -406,42 +406,41 @@ void MP1Node::handleJoinRequest(mp1Message *joinRequestMessage) {
     //cout << "to " << memberNode->addr.getAddress();
     //cout << ":heartbeat=" << memberNode->heartbeat << endl;
 
-    emulNet->ENsend(&memberNode->addr, &(joinRequestMessage->address), (char *)joinRequestMessage, msgsize);
-    free(replyMessage);
-    free(joinRequestMessage);
+    emulNet->ENsend(&memberNode->addr, &(mReply->address), (char *)mReply, msgsize);
+    free(mReply);
 }
 
-void MP1Node::handleJoinReply(mp1Message *joinReplyMsg) {
+void MP1Node::handleJoinReply(MembershipMessage *message) {
 
     //got a reply so we are in the group now
     memberNode->inGroup = true;
 
     // update the heartbeat and the member table
-    Address sender = joinReplyMsg->address;
+    Address sender = message->address;
     int id = getAddressId(sender);
     short port = getAddressPort(sender);
-    updateMemberList(id, port, joinReplyMsg->heartbeat);
+    updateMemberList(id, port, message->heartbeat);
     //cout << "handleJoinReply: reply from " << sender.getAddress() << endl;
 }
 
 
 
-void MP1Node::handleMemberTable(mp1Message *memberTableMessage) {
+void MP1Node::handleMemberTable(MembershipMessage *message) {
 
     if (getMyId() == 10) {
-        //cout << "handleMemberTable from " << memberTableMessage->address.getAddress() << endl;
+        //cout << "handleMemberTable from " << message->address.getAddress() << endl;
     }
 
 
-    vector<MemberListEntry>::iterator mlItem = memberTableMessage->memberList.begin();
-    for (; mlItem != memberTableMessage->memberList.end(); ++mlItem) {
+    vector<MemberListEntry>::iterator mlItem = message->memberList.begin();
+    for (; mlItem != message->memberList.end(); ++mlItem) {
         int id = mlItem->getid();
         short port = mlItem->getport();
         long heartbeat = mlItem->getheartbeat();
         updateMemberList(id, port, heartbeat);
     }
 
-    ////cout << "handleMemberTable from " << memberTableMessage->address.getAddress() << endl;
+    ////cout << "handleMemberTable from " << message->address.getAddress() << endl;
 }
 
 void MP1Node::updateMemberList(int id, short port, long heartbeat)  {
@@ -488,28 +487,28 @@ void MP1Node::sendMemberTables()
         sendCount = listSize;
     }
 
-    mp1Message *memberTableMassage;
-    memberTableMassage = new mp1Message;
+    MembershipMessage *message;
+    message = new MembershipMessage;
 
-    memberTableMassage->messageType = MEMBER_TABLE;
+    message->messageType = MEMBER_TABLE;
 
     //copy the address - the sent message gets assigned the FROM address
-    memberTableMassage->address = memberNode->addr;
+    message->address = memberNode->addr;
 
     //copy the menber list table - but don't send items that are older than TFAIL
     for (unsigned int i =0; i < memberNode->memberList.size(); i++) {
          if ((memberNode->memberList[i].gettimestamp() + TFAIL) > par->getcurrtime()) {
-             memberTableMassage->memberList.push_back(memberNode->memberList[i]);
+             message->memberList.push_back(memberNode->memberList[i]);
          }
     }
 
 
     //copy the heartbeat
-    memberTableMassage->heartbeat = memberNode->heartbeat;
+    message->heartbeat = memberNode->heartbeat;
 
-    size_t messageSize = sizeof(memberTableMassage);
+    size_t messageSize = sizeof(MembershipMessage);
 
-    
+
     //select n random elements
     vector<MemberListEntry>::iterator begin = memberNode->memberList.begin();
     size_t left = distance(begin , memberNode->memberList.end());
@@ -526,7 +525,7 @@ void MP1Node::sendMemberTables()
         MemberListEntry mleItem = memberNode->memberList[i];
         if((mleItem.id != getMyId())) {
             Address destination = makeAddress(mleItem.id, mleItem.port);
-            emulNet->ENsend(&memberNode->addr, &destination, (char *)memberTableMassage, messageSize);
+            emulNet->ENsend(&memberNode->addr, &destination, (char *)message, messageSize);
             ////cout << " sending member table from " << getMyId() << ":to:" << mleItem.id << endl;
         }
     }
@@ -581,5 +580,4 @@ void MP1Node::logMemberStatus() {
         //cout << "]" << endl;
     }
 }
-
 
