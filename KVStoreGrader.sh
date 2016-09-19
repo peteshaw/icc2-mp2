@@ -628,3 +628,4 @@ GRADE=`echo ${GRADE} ${UPDATE_TEST5_SCORE} | awk '{print $1 + $2}'`
 echo ""
 echo "TOTAL GRADE: ${GRADE} / 90" 
 echo ""
+
