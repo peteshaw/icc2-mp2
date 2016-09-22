@@ -40,11 +40,11 @@ MP2Node::~MP2Node() {
 void MP2Node::updateRing() {
 
     vector<Node> currentMembersList;
+
     currentMembersList = getMembershipList();
     // Sort the list based on the hashCode
     sort(currentMembersList.begin(), currentMembersList.end());
 
-    bool bChange = false;
 
     if ( ring.size() == 0 ){
         ring=currentMembersList;
@@ -52,21 +52,11 @@ void MP2Node::updateRing() {
     }
 
     if (currentMembersList.size() != ring.size()){
-        bChange = true;
-    } else {
-        for(int i = 0; i < currentMembersList.size(); i++) {
-              if (!( ring[i].nodeAddress == currentMembersList[i].nodeAddress)) {
-                  bChange = true;
-                  break;
-              }
-          }
+        stabilizationProtocol();
     }
 
     ring=currentMembersList;
 
-    if (bChange == true) {
-        stabilizationProtocol();
-    }
 }
 
 /**
@@ -126,25 +116,24 @@ void MP2Node::clientCreate(string key, string value) {
 
     long tID = addTransaction(key, value, CREATE);
     Transaction t = transactions[tID];
-    string fName = "clientCreate";
     //New Primary Node
         Message msg(tID, memberNode->addr, CREATE, key, value, PRIMARY);
         emulNet->ENsend(&memberNode->addr, replicaNodes[0].getAddress(), msg.toString());
         string s = "PRIMARY create to " + replicaNodes[0].getAddress()->getAddress();
-        trace(fName,tID, memberNode->addr,key, value, s);
+        trace("clientCreate",tID, memberNode->addr,key, value, s);
 
     //new secondary node
         Message msg2(tID, memberNode->addr, CREATE, key, value, SECONDARY);
         emulNet->ENsend(&memberNode->addr, replicaNodes[1].getAddress(), msg2.toString());
         s = "SECONDARY create to " + replicaNodes[0].getAddress()->getAddress();
-        trace(fName,tID, memberNode->addr,key, value, s);
+        trace("clientCreate",tID, memberNode->addr,key, value, s);
 
 
     //new tertiary node
         Message msg3(tID, memberNode->addr, CREATE, key, value, TERTIARY);
         emulNet->ENsend(&memberNode->addr, replicaNodes[2].getAddress(), msg3.toString());
         s = "TERTIARY create to " + replicaNodes[0].getAddress()->getAddress();
-        trace(fName,tID, memberNode->addr,key, value, s);
+        trace("clientCreate",tID, memberNode->addr,key, value, s);
 
 
     //update the transaction list
@@ -167,7 +156,6 @@ void MP2Node::clientCreate(string key, string value) {
 void MP2Node::clientRead(string key){
 
 
-    string fName = "clientRead";
     vector<Node> replicas = findNodes(key);
     long tID = addTransaction(key, "", READ);
     Transaction t = transactions[tID];
@@ -180,7 +168,7 @@ void MP2Node::clientRead(string key){
         Address fromAddr  = *(thisNode.getAddress());
         string sFromAddr = fromAddr.getAddress();
         string s = "sending read message to " + sFromAddr;
-        trace(fName,tID, memberNode->addr,key,value, s);
+        trace("clientRead",tID, memberNode->addr,key,value, s);
     }
     transactions[tID]= t;
 }
@@ -203,7 +191,7 @@ void MP2Node::clientUpdate(string key, string value){
     vector<Node> replicas = findNodes(key);
     if(replicas.size() == 0){
         log->logUpdateFail(&memberNode->addr, true, g_transID, key, value);
-        trace(fName,tID, memberNode->addr,key, value, "update fail");
+        trace("clientUpdate",tID, memberNode->addr,key, value, "update fail");
         return;
     }
 
@@ -322,21 +310,21 @@ void MP2Node::checkMessages() {
         if(incomingMessage.type == CREATE) {
             createMessageHandler(incomingMessage);
             s = "incoming CREATE message from " + fromAddress;
-                trace(fName,tID,node,blank ,blank,s);
+                trace("checkMessages",tID,node,blank ,blank,s);
         }
 
         //Handle the READ message
         else if(incomingMessage.type == READ){
             readMessagehandler(incomingMessage);
             s = "incoming READ message from " + fromAddress;
-                trace(fName,tID,node,blank ,blank,s);
+            trace("checkMessages",tID,node,blank ,blank,s);
         }
 
         //Handle the UPDATE message
         else if(incomingMessage.type == UPDATE) {
             updateMessagehandler(incomingMessage);
             s = "incoming UPDATE message from " + fromAddress;
-            trace(fName,tID,node,blank ,blank,s);
+            trace("checkMessages",tID,node,blank ,blank,s);
         }
 
         //Handle DELETE message
@@ -473,7 +461,7 @@ void MP2Node::readReplyMessageHandler(Message incomingMessage){
         t.failures++;
         if (t.failures > 1) {
             log->logReadFail(&memberNode->addr, true, incomingMessage.transID, t.key);
-            //cout << "read fail" << tID << ", " << memberNode->addr.getAddress() << ", " << t.key << ", " << endl;
+            trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read failed - 2 failed reads");
         }
     }
 
@@ -486,7 +474,7 @@ void MP2Node::readReplyMessageHandler(Message incomingMessage){
         if (t.value == value) {
             t.complete = true;
             log->logReadSuccess(&memberNode->addr, true, tID, t.key, incomingMessage.value);
-            //cout << "read success " << tID << ", " << memberNode->addr.getAddress() << ", " << t.key << ", " << incomingMessage.value << endl;
+            trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read success - 2 matching reads");
         } else {
             t.value2 = value;
         }
@@ -496,10 +484,10 @@ void MP2Node::readReplyMessageHandler(Message incomingMessage){
         t.complete = true;
         if ((t.value == value) || (t.value2 == value)) {
             log->logReadSuccess(&memberNode->addr, true, tID, t.key, incomingMessage.value);
-            //cout << "read success " << tID << ", " << memberNode->addr.getAddress() << ", " << t.key << ", " << incomingMessage.value << endl;
+            trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read success - 2 matching reads");
         } else {
             log->logReadFail(&memberNode->addr, true, incomingMessage.transID, t.key);
-            //cout << "read fail" << tID << ", " << memberNode->addr.getAddress() << ", " << t.key << ", " << endl;
+            trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read fail - 3 different reads");
         }
     }
 
@@ -693,15 +681,15 @@ void MP2Node::readMessagehandler(Message incomingMessage){
     if(value != ""){
         Message msg(incomingMessage.transID, memberNode->addr, value);
         emulNet->ENsend(&memberNode->addr, &fromAddr, msg.toString());
-        log->logReadSuccess(&memberNode->addr, false, incomingMessage.transID, key, value);
-        cout << "read msg-found" << tID << ", " << memberNode->addr.getAddress() << ", " << key << ", " << value << endl;
+        log->logReadSuccess(&memberNode->addr, false, incomingMessage.transID, key, value);        
+        trace("readMessagHandler",tID, memberNode->addr,key,value,"read success - key found at node");
     }
     //A key was not found, Log failure and send the message
     else{
         Message msg(incomingMessage.transID, memberNode->addr, "_");
         emulNet->ENsend(&memberNode->addr, &fromAddr, msg.toString());
         log->logReadFail(&memberNode->addr, false, incomingMessage.transID, key);
-        cout << "read msg-fail" << tID << ", " << memberNode->addr.getAddress() << ", " << key << endl;
+        trace("readMessagHandler",tID, memberNode->addr,key,value,"read fail - key not found");
     }
 }
 
@@ -797,7 +785,6 @@ void MP2Node::stabilizationProtocol() {
 
     map<string, string>::iterator it;
     vector<Node> failedNodes;
-    string fName = "stabilizationProtocoal";
 
     for(it = kvsHashTable->hashTable.begin(); it != kvsHashTable->hashTable.end(); it++){
 
@@ -814,7 +801,7 @@ void MP2Node::stabilizationProtocol() {
         Node n = replicaNodes[0];
         Address a = *n.getAddress();
         string s = "sending create message to" + a.getAddress();
-        trace(fName,tID,memberNode->addr,key,blank, s);
+        trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
 
 
         Message msg2 (tID, memberNode->addr, CREATE, key, value, SECONDARY);
@@ -822,7 +809,7 @@ void MP2Node::stabilizationProtocol() {
         n = replicaNodes[1];
         a = *n.getAddress();
         s = "sending create message to" + a.getAddress();
-      trace(fName,tID,memberNode->addr,key,blank, s);
+        trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
 
 
         Message msg3 (tID, memberNode->addr, CREATE, key, value, TERTIARY);
@@ -830,64 +817,12 @@ void MP2Node::stabilizationProtocol() {
         n = replicaNodes[2];
         a = *n.getAddress();
         s = "sending create message to" + a.getAddress();
-        trace(fName,tID,memberNode->addr,key,blank, s);
+        trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
 
        }
 }
 
 
-/*    //loop through the local store
-    for(it = kvsHashTable->hashTable.begin(); it != kvsHashTable->hashTable.end(); it++){
-
-        string key = it->first;
-        string value = it->second;
-
-        //get replicas for the current key
-        vector<Node> replicaNodes = findNodes(it->first);
-
-        //case: 1 - I AM THE PRIMARY
-        if (replicaNodes[0].getAddress() == &(memberNode->addr)) {
-                Message msg2(g_transID, memberNode->addr, CREATE, key, value, SECONDARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[1].getAddress(), msg2.toString());
-
-                Message msg3(g_transID, memberNode->addr, CREATE, key, value, TERTIARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[2].getAddress(), msg3.toString());
-            }
-
-        //CASE TWO I AM THE SECONDARY
-        else  if (replicaNodes[1].getAddress() == &(memberNode->addr)) {
-                Message msg1(g_transID, memberNode->addr, CREATE, key, value, PRIMARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[0].getAddress(), msg1.toString());
-
-                Message msg3(g_transID, memberNode->addr, CREATE, key, value, TERTIARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[2].getAddress(), msg3.toString());
-        }
-
-        //CASE 3 - I AM THE TERTIARY
-        else if (replicaNodes[2].getAddress() == &(memberNode->addr)) {
-
-                Message msg1(g_transID, memberNode->addr, CREATE, key, value, PRIMARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[0].getAddress(), msg1.toString());
-
-                Message msg2(g_transID, memberNode->addr, CREATE, key, value, SECONDARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[1].getAddress(), msg2.toString());
-        }
-
-        //CASE 4 - ALL YOUR NODES (NOT) BELONG TO US
-        else {           
-                Message msg1 (g_transID, memberNode->addr, CREATE, key, value, PRIMARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[0].getAddress(), msg1.toString());
-
-eplicaNodes[0].getAddress()
-            }     Message msg2 (g_transID, memberNode->addr, CREATE, key, value, SECONDARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[1].getAddress(), msg2.toString());
-
-                Message msg3 (g_transID, memberNode->addr, CREATE, key, value, TERTIARY);
-                emulNet->ENsend(&memberNode->addr, replicaNodes[2].getAddress(), msg3.toString());
-        }
-    }
-}
-*/
 /*
  * UTILITY FUNCTIONS
  *
@@ -947,16 +882,16 @@ long MP2Node::addTransaction(string key, string value, MessageType type )  {
 }
 
 
-void MP2Node::trace(string function, long transaction, Address myAddress, string key, string value, string description) {
+void MP2Node::trace(const string &function, long transaction, Address myAddress, const string &key, const string &value, const string &description) {
 
     string sMyAddress = myAddress.getAddress();
 
-    string sTrace = "MP2Node, "+ function + ", " + sMyAddress + ", " + to_string(transaction) + ", " + key + ", " +value + ", " + description;
+    string sTrace = "MP2Node, " + function + ", " + sMyAddress + ", " + to_string(par->getcurrtime()) + ", " + to_string(transaction) + ", " + key + ", " +value + ", " + description;
 
-    cout <<   sTrace << endl;
+    //cout <<   sTrace << endl;
 
     ofstream myfile;
-    myfile.open ("log.txt",ios::app);
+    myfile.open ("icc2log.txt",ios::app);
     myfile <<  sTrace  << endl;
     myfile.close();
 

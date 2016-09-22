@@ -65,7 +65,6 @@ private:
 
 
 
-
     //Maps the transaction id to values associated with it
     map<long, Transaction> transactions;
 
@@ -149,7 +148,7 @@ public:
     int getAddressId(Address addr);
     short getAddressPort(Address addr);
     long addTransaction(string key, string value, MessageType type );
-    void trace(string function, long transaction, Address node, string key, string value, string description);
+    void trace(const string &function, long transaction, Address myAddress, const string &key, const string &value, const string &description);
 };
 
 #endif /* MP2NODE_H_ */

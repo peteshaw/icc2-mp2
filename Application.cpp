@@ -32,6 +32,12 @@ int main(int argc, char *argv[]) {
 		return FAILURE;
 	}
 
+    ofstream myfile;
+    myfile.open ("icc2log.txt");
+    myfile << endl << endl;
+    myfile.close();
+
+
 	// Create a new application object
 	Application *app = new Application(argv[1]);
 	// Call the run function
@@ -562,7 +568,7 @@ void Application::readTest() {
 
 		// Step 2.d Issue a read
 		cout<<endl<<"Reading a valid key.... ... .. . ."<<endl;
-		log->LOG(&mp2[number]->getMemberNode()->addr, "READ OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
+        log->LOG(&mp2[number]->getMemberNode()->addr, "test 2d READ OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
 		mp2[number]->clientRead(it->first);
 
 		failedOneNode = false;
@@ -637,8 +643,8 @@ void Application::readTest() {
 			number = findARandomNodeThatIsAlive();
 
 			// Step 3.c Issue a read
-			cout<<endl<<"Reading a valid key.... ... .. . ."<<endl;
-			log->LOG(&mp2[number]->getMemberNode()->addr, "READ OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
+            cout<<endl<<"test3.1c-Reading a valid key.... ... .. . ."<<endl;
+            log->LOG(&mp2[number]->getMemberNode()->addr, "test3.1c READ OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
 			// This read should fail since at least quorum nodes are not alive
 			mp2[number]->clientRead(it->first);
 		}
@@ -650,8 +656,8 @@ void Application::readTest() {
 		if ( par->getcurrtime() == (TEST_TIME + FIRST_FAIL_TIME + STABILIZE_TIME + STABILIZE_TIME) ) {
 			number = findARandomNodeThatIsAlive();
 			// Step 3.e Issue a read
-			cout<<endl<<"Reading a valid key.... ... .. . ."<<endl;
-			log->LOG(&mp2[number]->getMemberNode()->addr, "READ OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
+            cout<<endl<<"test3.2-Reading a valid key.... ... .. . ."<<endl;
+            log->LOG(&mp2[number]->getMemberNode()->addr, "test3.2 READ OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
 			// This read should be successful
 			mp2[number]->clientRead(it->first);
 		}
@@ -892,7 +898,7 @@ void Application::updateTest() {
 		if ( par->getcurrtime() == (TEST_TIME + FIRST_FAIL_TIME + STABILIZE_TIME + STABILIZE_TIME) ) {
 			number = findARandomNodeThatIsAlive();
 			// Step 3.e Issue a update
-			cout<<endl<<"Updating a valid key.... ... .. . ."<<endl;
+            cout<<endl<<"3.2-Updating a valid key.... ... .. . ."<<endl;
 			log->LOG(&mp2[number]->getMemberNode()->addr, "UPDATE OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), newValue.c_str(), par->getcurrtime());
 			// This update should be successful
 			mp2[number]->clientUpdate(it->first, newValue);
