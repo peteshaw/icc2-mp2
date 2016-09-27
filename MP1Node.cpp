@@ -24,7 +24,6 @@ using namespace std;
  */
 
 
-
 int MP1Node::initThisNode(Address *joinAddress) {
     /*
      * This function is partially implemented and may require changes

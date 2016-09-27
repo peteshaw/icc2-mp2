@@ -2,6 +2,7 @@
  * FILE NAME: Application.cpp
  *
  * DESCRIPTION: Application layer class function definitions
+ *
  **********************************/
 
 #include "Application.h"
@@ -242,7 +243,7 @@ void Application::mp2Run() {
 			cout<<endl<<"Doing create test at time: "<<par->getcurrtime()<<endl;
 		} // End of create test
 
-		/***************
+        /***************
 		 * DELETE TESTS
 		 ***************/
 		/**
@@ -461,7 +462,7 @@ void Application::deleteTest() {
 
 		// Step 1.b. Issue a delete operation
 		log->LOG(&mp2[number]->getMemberNode()->addr, "DELETE OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
-		mp2[number]->clientDelete(it->first);
+		mp2[number]->clientDeleteKey(it->first);
 	}
 
 	/**
@@ -474,7 +475,7 @@ void Application::deleteTest() {
 
 	// Step 2.b. Issue a delete operation
 	log->LOG(&mp2[number]->getMemberNode()->addr, "DELETE OPERATION KEY: %s at time: %d", invalidKey.c_str(), par->getcurrtime());
-	mp2[number]->clientDelete(invalidKey);
+	mp2[number]->clientDeleteKey(invalidKey);
 }
 
 /**

@@ -50,7 +50,7 @@ typedef struct MembershipMessage {
 /**
  * CLASS NAME: MP1Node
  *
- * DESCRIPTION: Class implementing Membership protocol functionalities for failure detection
+ * DESCRIPTION: Class implementing Membership protocol
  */
 class MP1Node {
 private:
@@ -65,10 +65,6 @@ public:
 	Member * getMemberNode() {
 		return memberNode;
 	}
-    int getAddressId(Address addr);
-    short getAddressPort(Address addr);
-    int getMyId();
-    short getMyPort();
     int recvLoop();
 	static int enqueueWrapper(void *env, char *buff, int size);
 	void nodeStart(char *servaddrstr, short serverport);
@@ -89,8 +85,12 @@ public:
     void handleMemberTable(MembershipMessage *message);
     void logMemberStatus();
     void updateMemberList(int id, short port, long heartbeat);
-    Address makeAddress(int id, short port);
     void sendMemberTables();
+    Address makeAddress(int id, short port);
+    int getMyId();
+    short getMyPort();
+    int getAddressId(Address addr);
+    short getAddressPort(Address addr);
 };
 
 #endif /* _MP1NODE_H_ */

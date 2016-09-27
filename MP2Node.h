@@ -23,7 +23,9 @@
  * CLASS NAME: MP2Node
  *
  * DESCRIPTION: This class encapsulates all the key-value store functionality
- * 				including:
+ * 				including:        string value2 = "";
+        MessageType type;
+
  * 				1) Ring
  * 				2) Stabilization Protocol
  * 				3) Server side CRUD APIs
@@ -31,14 +33,11 @@
  */
 class MP2Node {
 private:
-	// Vector holding the next two neighbors in the ring who have my replicas
-	vector<Node> hasMyReplicas;
-	// Vector holding the previous two neighbors in the ring whose replicas I have
-	vector<Node> haveReplicasOf;
+
 	// Ring
 	vector<Node> ring;
 	// Hash Table
-	HashTable * ht;
+    HashTable * kvsHashTable;
 	// Member representing this member
 	Member *memberNode;
 	// Params object
@@ -52,23 +51,26 @@ private:
 
 	//Temporary Vectors which hold the values when the ring is reconstructed
 	//and when the stabalization protocol is called
-	vector<Node> OldhasMyReplicas;
-	vector<Node> OldhaveReplicasOf;
 
-	//the transactionID for the various CRUD operations
-	long transactionID;
+    struct Transaction {
+        int time = 0;
+        string key = "";
+        string value = "";
+        string value2 = "";
+        MessageType type;
+        int  count = 0;
+        int failures = 0;
+        bool complete= false;
+    };
 
 
-	//Maps which map the tranaction id to various different values that are associated
-	//With a particular trasaction
-	map<long, int> transTime; 
-	map<long, string > transKey;
-	map<long, string > transValue;
-	map<long, string > transValue2;
-	map<long, MessageType> transType;
-	map<long, int> transNum;
-	map<long, bool> transComplete;
-	map<long, int> transInvalid;
+
+
+    //Maps the transaction id to values associated with it
+    map<long, Transaction> transactions;
+
+
+
 
 public:
 	MP2Node(Member *memberNode, Params *par, EmulNet *emulNet, Log *log, Address *addressOfMember);
@@ -80,14 +82,14 @@ public:
 	// ring functionalities
 	void updateRing();
 	vector<Node> getMembershipList();
-	size_t hashFunction(string key);
+    size_t hashFunction(string key);
 	void findNeighbors();
 
 	// client side CRUD APIs
 	void clientCreate(string key, string value);
 	void clientRead(string key);
 	void clientUpdate(string key, string value);
-	void clientDelete(string key);
+	void clientDeleteKey(string key);
 
 	// receive messages from Emulnet 
 	bool recvLoop();
@@ -114,34 +116,40 @@ public:
 	~MP2Node();
 
 	//A function to increment the transactionID counter after each unique CRUD operation
-	void incrementTransaction();
 	void clientCreateMap(string key, string value);
 	void clientDeleteMap(string key);
 
 	void createPrimaryKeyValHelper(string key);
 	void createKeyValuePrimary(string key);
-	void createKeyValueTertiary(string key);
+    void createKeyValueSecondary(string key);
+    void createKeyValueTertiary(string key);
 
 	//Message Handler Functions
-	void createMessageHandler(Message messageR);
-	void readMessagehandler(Message messageR);
-	void updateMessagehandler(Message messageR);
-	void deleteMessagehandler(Message messageR);
+    void createMessageHandler(Message incomingMessage);
+    void readMessagehandler(Message incomingMessage);
+    void updateMessagehandler(Message incomingMessage);
+    void deleteMessagehandler(Message incomingMessage);
 
 	//Message Reply Handler functions
 
-	void readreplyMessageHandler(Message messageR, long transactionID);
-	void createReplyMessageHandler(Message messageR, long transactionID);
-	void updateReplyMessageHandler(Message messageR, long transactionID);
-	void deleteReplyMessageHandler(Message messageR, long transactionID);
+    void readReplyMessageHandler(Message incomingMessage);
+    void createReplyMessageHandler(Message incomingMessage);
+    void updateReplyMessageHandler(Message incomingMessage);
+    void deleteReplyMessageHandler(Message incomingMessage);
 
 	//Transaction TImeout handler function
-	void transactionsTimeout();
-
-	//Clear the map
-	void clearMap(long transactionID);
+    void cleanUpTransactions();
 
 
+    //utility functions
+    bool isAddressInMembership(Address node);
+    Address makeAddress(int id, short port);
+    int getMyId();
+    short getMyPort();
+    int getAddressId(Address addr);
+    short getAddressPort(Address addr);
+    long addTransaction(string key, string value, MessageType type );
+    void trace(string function, long transaction, Address node, string key, string value, string description);
 };
 
 #endif /* MP2NODE_H_ */
