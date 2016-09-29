@@ -120,27 +120,25 @@ void MP2Node::clientCreate(string key, string value) {
         Message msg(tID, memberNode->addr, CREATE, key, value, PRIMARY);
         emulNet->ENsend(&memberNode->addr, replicaNodes[0].getAddress(), msg.toString());
         string s = "PRIMARY create to " + replicaNodes[0].getAddress()->getAddress();
-        trace("clientCreate",tID, memberNode->addr,key, value, s);
+        //trace("clientCreate",tID, memberNode->addr,key, value, s);
 
     //new secondary node
         Message msg2(tID, memberNode->addr, CREATE, key, value, SECONDARY);
         emulNet->ENsend(&memberNode->addr, replicaNodes[1].getAddress(), msg2.toString());
         s = "SECONDARY create to " + replicaNodes[0].getAddress()->getAddress();
-        trace("clientCreate",tID, memberNode->addr,key, value, s);
+        //trace("clientCreate",tID, memberNode->addr,key, value, s);
 
 
     //new tertiary node
         Message msg3(tID, memberNode->addr, CREATE, key, value, TERTIARY);
         emulNet->ENsend(&memberNode->addr, replicaNodes[2].getAddress(), msg3.toString());
         s = "TERTIARY create to " + replicaNodes[0].getAddress()->getAddress();
-        trace("clientCreate",tID, memberNode->addr,key, value, s);
+        //trace("clientCreate",tID, memberNode->addr,key, value, s);
 
 
     //update the transaction list
     transactions[tID] = t;
-
 }
-
 
 
 /**
@@ -162,7 +160,7 @@ void MP2Node::clientRead(string key){
     string value = "";
 
     for(auto i = 0; i<(int)replicas.size(); i++){
-        Message msg(g_transID, memberNode->addr, READ, key);
+        Message msg(tID, memberNode->addr, READ, key);
         emulNet->ENsend(&memberNode->addr, replicas[i].getAddress(), msg.toString());
         Node thisNode = replicas[i];
         Address fromAddr  = *(thisNode.getAddress());
@@ -190,7 +188,7 @@ void MP2Node::clientUpdate(string key, string value){
 
     vector<Node> replicas = findNodes(key);
     if(replicas.size() == 0){
-        log->logUpdateFail(&memberNode->addr, true, g_transID, key, value);
+        log->logUpdateFail(&memberNode->addr, true, tID, key, value);
         trace("clientUpdate",tID, memberNode->addr,key, value, "update fail");
         return;
     }
@@ -215,7 +213,7 @@ void MP2Node::clientUpdate(string key, string value){
  * 				2) Finds the replicas of this key
  * 				3) Sends a message to the replica
  */
-void MP2Node::clientDeleteKey(string key){
+void MP2Node::clientDelete(string key){
     /*
      * Implement this
      */
@@ -310,7 +308,7 @@ void MP2Node::checkMessages() {
         if(incomingMessage.type == CREATE) {
             createMessageHandler(incomingMessage);
             s = "incoming CREATE message from " + fromAddress;
-                trace("checkMessages",tID,node,blank ,blank,s);
+                //trace("checkMessages",tID,node,blank ,blank,s);
         }
 
         //Handle the READ message
@@ -324,14 +322,14 @@ void MP2Node::checkMessages() {
         else if(incomingMessage.type == UPDATE) {
             updateMessagehandler(incomingMessage);
             s = "incoming UPDATE message from " + fromAddress;
-            trace("checkMessages",tID,node,blank ,blank,s);
+            //trace("checkMessages",tID,node,blank ,blank,s);
         }
 
         //Handle DELETE message
         else if(incomingMessage.type == DELETE){
             deleteMessagehandler(incomingMessage);
             s = "incoming DELETE message from " + fromAddress;
-            trace(fName,tID,node,blank ,blank,s);
+            //trace(fName,tID,node,blank ,blank,s);
         }
 
         //Handle a reply message
@@ -345,21 +343,21 @@ void MP2Node::checkMessages() {
                 if(type == CREATE){
                     createReplyMessageHandler(incomingMessage);
                     s = "incoming CREATE REPLY message from " + fromAddress;
-                    trace(fName,tID,node,blank ,blank,s);
+                    //trace(fName,tID,node,blank ,blank,s);
                 }
 
                 //REPLY of a UPDATEis
                 else if(type == UPDATE){
                     updateReplyMessageHandler(incomingMessage);
                     s = "incoming UPDATE REPLY message from " + fromAddress;
-                    trace(fName,tID,node,blank ,blank,s);
+                    //trace(fName,tID,node,blank ,blank,s);
                 }
 
                 //REPLY of a DELETE
                 else if(type == DELETE){
                     s = "incoming DELETE REPLY message from " + fromAddress;
                     deleteReplyMessageHandler(incomingMessage);
-                    trace(fName,tID,node,blank ,blank,s);
+                    //trace(fName,tID,node,blank ,blank,s);
                 }
             }
         }
@@ -394,7 +392,7 @@ void MP2Node::cleanUpTransactions() {
         long transactionID = it->first;
         Transaction t = it->second;
 
-        if((par->getcurrtime() - t.time) > 10){
+        if((par->getcurrtime() - t.time) > 5){
 
 
             //erase completed messages
@@ -457,37 +455,37 @@ void MP2Node::readReplyMessageHandler(Message incomingMessage){
     t.count++;
 
     //fail if we get 2 failed reads
-    if (value != "_") {
+    if (value == "_") {
         t.failures++;
         if (t.failures > 1) {
             log->logReadFail(&memberNode->addr, true, incomingMessage.transID, t.key);
             trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read failed - 2 failed reads");
         }
-    }
+    } else { //try and find a match or quorum
 
-   //try and find a match or quorum    
-    if (t.count == 1) {
-        t.value = value;
-    }
-
-    if (t.count == 2) {
-        if (t.value == value) {
-            t.complete = true;
-            log->logReadSuccess(&memberNode->addr, true, tID, t.key, incomingMessage.value);
-            trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read success - 2 matching reads");
-        } else {
-            t.value2 = value;
+        if (t.count == 1) {
+            t.value = value;
         }
-    }
 
-    if (t.count == 3) {
-        t.complete = true;
-        if ((t.value == value) || (t.value2 == value)) {
-            log->logReadSuccess(&memberNode->addr, true, tID, t.key, incomingMessage.value);
-            trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read success - 2 matching reads");
-        } else {
-            log->logReadFail(&memberNode->addr, true, incomingMessage.transID, t.key);
-            trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read fail - 3 different reads");
+        if (t.count == 2) {
+            if (t.value == value) {
+                t.complete = true;
+                log->logReadSuccess(&memberNode->addr, true, tID, t.key, incomingMessage.value);
+                trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read success - 2 matching reads");
+            } else {
+                t.value2 = value;
+            }
+        }
+
+        if (t.count == 3) {
+            t.complete = true;
+            if ((t.value == value) || (t.value2 == value)) {
+                log->logReadSuccess(&memberNode->addr, true, tID, t.key, incomingMessage.value);
+                trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read success - 2 matching reads");
+            } else {
+                log->logReadFail(&memberNode->addr, true, incomingMessage.transID, t.key);
+                trace("readReplyMessageHandler",tID, memberNode->addr,key, value, "read fail - 3 different reads");
+            }
         }
     }
 
@@ -801,7 +799,7 @@ void MP2Node::stabilizationProtocol() {
         Node n = replicaNodes[0];
         Address a = *n.getAddress();
         string s = "sending create message to" + a.getAddress();
-        trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
+        //trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
 
 
         Message msg2 (tID, memberNode->addr, CREATE, key, value, SECONDARY);
@@ -809,7 +807,7 @@ void MP2Node::stabilizationProtocol() {
         n = replicaNodes[1];
         a = *n.getAddress();
         s = "sending create message to" + a.getAddress();
-        trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
+        //trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
 
 
         Message msg3 (tID, memberNode->addr, CREATE, key, value, TERTIARY);
@@ -817,7 +815,7 @@ void MP2Node::stabilizationProtocol() {
         n = replicaNodes[2];
         a = *n.getAddress();
         s = "sending create message to" + a.getAddress();
-        trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
+        //trace("stabilizationProtocoal",tID,memberNode->addr,key,blank, s);
 
        }
 }
@@ -888,11 +886,22 @@ void MP2Node::trace(const string &function, long transaction, Address myAddress,
 
     string sTrace = "MP2Node, " + function + ", " + sMyAddress + ", " + to_string(par->getcurrtime()) + ", " + to_string(transaction) + ", " + key + ", " +value + ", " + description;
 
-    //cout <<   sTrace << endl;
+    cout <<   sTrace << endl;
 
     ofstream myfile;
     myfile.open ("icc2log.txt",ios::app);
     myfile <<  sTrace  << endl;
+    myfile.close();
+
+}
+
+void MP2Node::trace(const string &description) {
+
+    cout << description << endl;
+
+    ofstream myfile;
+    myfile.open ("icc2log.txt",ios::app);
+    myfile <<  description  << endl;
     myfile.close();
 
 }

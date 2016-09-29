@@ -88,7 +88,7 @@ public:
 	void clientCreate(string key, string value);
 	void clientRead(string key);
 	void clientUpdate(string key, string value);
-	void clientDeleteKey(string key);
+    void clientDelete(string key);
 
 	// receive messages from Emulnet 
 	bool recvLoop();
@@ -149,6 +149,7 @@ public:
     short getAddressPort(Address addr);
     long addTransaction(string key, string value, MessageType type );
     void trace(const string &function, long transaction, Address myAddress, const string &key, const string &value, const string &description);
+    void trace(const string &description) ;
 };
 
 #endif /* MP2NODE_H_ */

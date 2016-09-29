@@ -18,9 +18,9 @@
 /**
  * Macros
  */
-#define TREMOVE 50
-#define TFAIL 20
-#define SPREAD_RATE 10
+#define TREMOVE 20
+#define TFAIL 5
+#define SPREAD_RATE 3
 
 /*
  * Note: You can change/add any functions in MP1Node.{h,cpp}

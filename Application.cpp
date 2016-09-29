@@ -468,7 +468,7 @@ void Application::deleteTest() {
 
 		// Step 1.b. Issue a delete operation
 		log->LOG(&mp2[number]->getMemberNode()->addr, "DELETE OPERATION KEY: %s VALUE: %s at time: %d", it->first.c_str(), it->second.c_str(), par->getcurrtime());
-		mp2[number]->clientDeleteKey(it->first);
+        mp2[number]->clientDelete(it->first);
 	}
 
 	/**
@@ -481,7 +481,7 @@ void Application::deleteTest() {
 
 	// Step 2.b. Issue a delete operation
 	log->LOG(&mp2[number]->getMemberNode()->addr, "DELETE OPERATION KEY: %s at time: %d", invalidKey.c_str(), par->getcurrtime());
-	mp2[number]->clientDeleteKey(invalidKey);
+    mp2[number]->clientDelete(invalidKey);
 }
 
 /**
@@ -586,6 +586,7 @@ void Application::readTest() {
 		int count = 0;
 
 		if ( par->getcurrtime() == (TEST_TIME + FIRST_FAIL_TIME + STABILIZE_TIME) ) {
+             mp2[number]->trace("application - Starting test 3.1");
 			// Step 3.a. Find a node that is alive
 			number = findARandomNodeThatIsAlive();
 
@@ -654,6 +655,7 @@ void Application::readTest() {
 		 */
 		// Step 3.d Wait for stabilization protocol to kick in
 		if ( par->getcurrtime() == (TEST_TIME + FIRST_FAIL_TIME + STABILIZE_TIME + STABILIZE_TIME) ) {
+            mp2[number]->trace("application - Starting test 3.2");
 			number = findARandomNodeThatIsAlive();
 			// Step 3.e Issue a read
             cout<<endl<<"test3.2-Reading a valid key.... ... .. . ."<<endl;
